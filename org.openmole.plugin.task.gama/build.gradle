@@ -8,6 +8,8 @@ apply plugin: 'biz.aQute.bnd.builder'
 
 version '9.0-SNAPSHOT'
 
+def homePath = System.properties['user.home']
+
 sourceCompatibility = 1.8
 
 repositories {
@@ -24,7 +26,7 @@ repositories {
     }
 
     ivy {
-        url '/home/reyman/.ivy2/local'
+        url homePath+'/.ivy2/local'
         patternLayout {
             ivy("[organisation]/[module]/[revision]/ivys/[artifact].[ext]")
             artifact("[organisation]/[module]/[revision]/bundles/[artifact].[ext]")
