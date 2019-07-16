@@ -1,5 +1,8 @@
 image: gradle:alpine
 
+variables:
+  GIT_SUBMODULE_STRATEGY: normal
+
 stages:
   - build
 
