@@ -12,4 +12,7 @@ before_script:
 build:
   stage: build
   script:
-    - ./build.sh
+    - ./publishLocal.sh
+    - cd ..
+    - ./gradlew assemble
+
