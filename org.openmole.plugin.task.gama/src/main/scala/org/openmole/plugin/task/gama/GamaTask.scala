@@ -28,12 +28,6 @@ import scala.util.Try
 
 object GamaTask {
 
-  trait GAMABuilder[T] {
-    def gamaInputs: Lens[T, Vector[(FromContext[_], String)]]
-    def gamaOutputs: Lens[T, Vector[(String, Val[_])]]
-    def seed: Lens[T, Option[Val[Int]]]
-  }
-
   implicit def isIO: InputOutputBuilder[GamaTask] = InputOutputBuilder(GamaTask.config)
   implicit def isExternal: ExternalBuilder[GamaTask] = ExternalBuilder(GamaTask.external)
   implicit def isMapped = MappedInputOutputBuilder(GamaTask.mapped)
