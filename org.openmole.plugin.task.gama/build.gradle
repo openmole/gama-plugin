@@ -52,8 +52,8 @@ dependencies {
 
     scalaCompilerPlugin 'org.scalamacros:paradise_2.12.7:2.1.0'
 
-    compileOnly group: 'org.openmole', name:"org-openmole-core-dsl_2.12", version:"9.0-SNAPSHOT", configuration: "compile"
-    compileOnly group: 'org.openmole', name:"org-openmole-plugin-task-external_2.12", version:"9.0-SNAPSHOT", configuration: "compile"
+    compileOnly group: 'org.openmole', name:"org-openmole-core-dsl_2.12", version:"9.1", configuration: "compile"
+    compileOnly group: 'org.openmole', name:"org-openmole-plugin-task-external_2.12", version:"9.1", configuration: "compile"
 
 
 }
