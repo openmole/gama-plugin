@@ -2,35 +2,28 @@ package org.openmole.plugin.task.gama
 
 import java.io.File
 
-import org.openmole.core.context._
-import org.openmole.core.workflow.task._
-import org.openmole.core.workflow.dsl._
-import org.openmole.core.tools.service._
-import org.openmole.core.exception._
-import org.openmole.plugin.task.external._
-import org.openmole.core.tools.io.Prettifier._
 import monocle.Lens
 import monocle.macros.Lenses
-import msi.gama.headless.core.{ GamaHeadlessException, HeadlessSimulationLoader }
+import msi.gama.headless.core.GamaHeadlessException
 import msi.gama.headless.openmole.MoleSimulationLoader
 import msi.gama.kernel.experiment.IParameter
-import msi.gama.kernel.model.IModel
 import msi.gama.precompiler.GamlProperties
-import msi.gama.util.{ GamaList, GamaListFactory }
-import msi.gama.util.matrix.GamaMatrix
+import msi.gama.util.GamaListFactory
 import msi.gaml.compilation.GamlCompilationError
-import msi.gaml.types.{ IType, Types }
+import msi.gaml.types.{IType, Types}
+import org.openmole.core.context._
+import org.openmole.core.exception._
 import org.openmole.core.expansion._
-import org.openmole.core.workflow.builder._
-import org.openmole.core.workflow.validation._
-import org.openmole.tool.random._
-import org.openmole.tool.types._
-import org.openmole.core.fileservice.FileService
 import org.openmole.core.pluginmanager._
 import org.openmole.core.serializer.plugin.Plugins
-import org.openmole.core.workspace.NewFile
+import org.openmole.core.tools.io.Prettifier._
+import org.openmole.core.workflow.builder._
+import org.openmole.core.workflow.dsl._
+import org.openmole.core.workflow.task._
+import org.openmole.core.workflow.validation._
+import org.openmole.plugin.task.external._
 
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 import scala.util.Try
 
 object GamaTask {
@@ -41,15 +34,10 @@ object GamaTask {
     def seed: Lens[T, Option[Val[Int]]]
   }
 
-  implicit def isIO: InputOutputBuilder[GamaTask] = InputOutputBuilder(GamaTask._config)
+  implicit def isIO: InputOutputBuilder[GamaTask] = InputOutputBuilder(GamaTask.config)
   implicit def isExternal: ExternalBuilder[GamaTask] = ExternalBuilder(GamaTask.external)
+  implicit def isMapped = MappedInputOutputBuilder(GamaTask.mapped)
   implicit def isInfo = InfoBuilder(info)
-
-  implicit def isGAMA: GAMABuilder[GamaTask] = new GAMABuilder[GamaTask] {
-    override def gamaInputs = GamaTask.gamaInputs
-    override def gamaOutputs = GamaTask.gamaOutputs
-    override def seed = GamaTask.seed
-  }
 
   def apply(
     workspace: File,
@@ -57,7 +45,8 @@ object GamaTask {
     experiment: FromContext[String],
     maxStep: OptionalArgument[FromContext[Int]] = None,
     stopCondition: OptionalArgument[FromContext[String]] = None,
-    failOnGamlError: Boolean = true
+    failOnGamlError: Boolean = true,
+    seed: OptionalArgument[Val[Int]] = None
   )(implicit name: sourcecode.Name,definitionScope: DefinitionScope) = {
 
     val plugins = extensionPlugins(workspace / model, failOnGamlError)
@@ -67,17 +56,19 @@ object GamaTask {
         experiment = experiment,
         stopCondition = stopCondition,
         maxStep = maxStep,
-        gamaInputs = Vector.empty,
-        gamaOutputs = Vector.empty,
-        seed = None,
-        _config = InputOutputConfig(),
+        seed = seed,
+        config = InputOutputConfig(),
         info = InfoConfig(),
         plugins = plugins,
         failOnGamlError = failOnGamlError,
-        external = External()
+        external = External(),
+        mapped = MappedInputOutputConfig()
       )
 
-    gamaTask set (workspace.listFiles().map(resources += _))
+    gamaTask set (
+      workspace.listFiles().map(resources += _),
+      seed.map(inputs += _).toSeq
+    )
   }
 
   private def withDisposable[T, D <: { def dispose() }](d: => D)(f: D => T): T = {
@@ -131,11 +122,10 @@ object GamaTask {
     experiment: FromContext[String],
     stopCondition: OptionalArgument[FromContext[String]],
     maxStep: OptionalArgument[FromContext[Int]],
-    gamaInputs: Vector[(FromContext[_], String)],
-    gamaOutputs: Vector[(String, Val[_])],
     seed: Option[Val[Int]],
     info:InfoConfig,
-    _config: InputOutputConfig,
+    config: InputOutputConfig,
+    mapped:            MappedInputOutputConfig,
     plugins: Seq[File],
     failOnGamlError: Boolean,
     external: External
@@ -153,9 +143,6 @@ object GamaTask {
       stopError ++
       External.validate(external)(allInputs).apply
   }
-
-  override def config =
-    InputOutputConfig.inputs.modify(_ ++ seed)(_config)
 
   def compile(model: File) = {
     val properties = new GamlProperties()
@@ -188,7 +175,9 @@ object GamaTask {
 
           val gamaParameters = gamaModel.getExperiment(experiment.from(context)).getParameters
 
-          for ((p, n) <- gamaInputs) {
+          for (input <- mapped.inputs) {
+            def n = input.name
+            def p = input.v
             val parameter = gamaParameters.get(n)
             if (parameter == null) throw new UserBadDataError(s"Parameter $n not found in experiment ${experiment.from(context)}")
             val value = p.from(context)
@@ -201,8 +190,8 @@ object GamaTask {
           gamaExperiment.setup(experiment.from(context), seed.map(context(_)).getOrElse(random().nextInt).toDouble)
 
           //FIXME workaround some wierd gama bug, otherwise output cannot be evaluated
-          gamaOutputs.foreach {
-            case (n, p) => gamaExperiment.evaluateExpression(n)
+          mapped.outputs.foreach {
+            case output => gamaExperiment.evaluateExpression(output.name)
           }
 
           try gamaExperiment.play(
@@ -218,8 +207,10 @@ object GamaTask {
           }
 
           def gamaOutputVariables =
-            gamaOutputs.map {
-              case (n, p) =>
+            mapped.outputs.map {
+              case output =>
+                def n = output.name
+                def p = output.v
                 val gamaValue =
                   gamaExperiment.evaluateExpression(n)
                 Variable.unsecure(p, fromGAMAObject(

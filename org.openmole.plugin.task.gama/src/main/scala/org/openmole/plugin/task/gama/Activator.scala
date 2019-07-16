@@ -18,7 +18,23 @@
 package org.openmole.plugin.task.gama
 
 import org.openmole.core.pluginmanager._
+import org.osgi.framework.BundleContext
 
 class Activator extends PluginInfoActivator {
-  override def keyWordTraits = List(classOf[GamaPackage])
+
+  override def stop(context: BundleContext): Unit = {
+    PluginInfo.unregister(this)
+  }
+
+  override def start(context: BundleContext): Unit = {
+    import org.openmole.core.pluginmanager.KeyWord._
+
+    val keyWords: Vector[KeyWord] =
+      Vector(
+        TaskKeyWord(objectName(GamaTask))
+      )
+
+    PluginInfo.register(this, Vector(this.getClass.getPackage), keyWords = keyWords)
+  }
+
 }
