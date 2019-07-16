@@ -1,0 +1,3 @@
+[submodule "openmole"]
+	path = openmole
+	url = https://gitlab.openmole.org/openmole/openmole.git
