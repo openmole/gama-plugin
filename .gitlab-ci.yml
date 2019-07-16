@@ -12,6 +12,7 @@ before_script:
 build:
   stage: build
   script:
+    - cd openmole
     - ./publishLocal.sh
     - cd ..
     - ./gradlew assemble
