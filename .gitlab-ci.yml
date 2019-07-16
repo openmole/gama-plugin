@@ -1,4 +1,4 @@
-image: gradle:alpine
+image: openmole/build
 
 variables:
   GIT_SUBMODULE_STRATEGY: normal
@@ -13,7 +13,9 @@ build:
   stage: build
   script:
     - cd openmole
-    - ./publishLocal.sh
+    - '(cd build-system && sbt clean publishLocal)'
+    - '(cd libraries && sbt clean publishLocal)'
+    - '(cd openmole && sbt clean publishLocal)'
     - cd ..
     - ./gradlew assemble
 
