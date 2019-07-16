@@ -1,0 +1,4 @@
+rootProject.name = 'gama'
+include 'org.openmole.plugin.task.gama'
+include 'get-gama-p2'
+

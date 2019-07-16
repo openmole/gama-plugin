@@ -1,0 +1,83 @@
+evaluationDependsOn(':get-gama-p2')
+
+apply plugin: 'scala'
+apply plugin: 'org.standardout.bnd-platform'
+apply plugin: 'com.diffplug.gradle.osgi.bndmanifest'
+apply plugin: 'com.diffplug.gradle.eclipse.projectdeps'
+apply plugin: 'biz.aQute.bnd.builder'
+
+version '9.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+    maven {
+        url rootProject.file('get-gama-p2/build/p2asmaven/maven')
+    }
+
+    if (project.version.endsWith('SNAPSHOT')) {
+        maven {
+            url 'https://oss.sonatype.org/content/repositories/snapshots/'
+        }
+    }
+
+    ivy {
+        url '/home/reyman/.ivy2/local'
+        patternLayout {
+            ivy("[organisation]/[module]/[revision]/ivys/[artifact].[ext]")
+            artifact("[organisation]/[module]/[revision]/bundles/[artifact].[ext]")
+            //m2compatible = true
+        }
+    }
+
+}
+
+configurations {
+    scalaCompilerPlugin
+}
+
+//configurations.scalaCompilerPlugin.transitive = false
+
+dependencies {
+
+    compile 'p2:msi.gama.headless:+'
+    compile 'p2:msi.gama.core:+'
+    compile 'p2:ummisco.gama.annotations:+'
+
+    compile 'org.scala-lang:scala-library:2.12.7'
+
+    scalaCompilerPlugin 'org.scalamacros:paradise_2.12.7:2.1.0'
+
+    compileOnly group: 'org.openmole', name:"org-openmole-core-dsl_2.12", version:"9.0-SNAPSHOT", configuration: "compile"
+    compileOnly group: 'org.openmole', name:"org-openmole-plugin-task-external_2.12", version:"9.0-SNAPSHOT", configuration: "compile"
+
+
+}
+
+tasks.withType(ScalaCompile) {
+    scalaCompileOptions.additionalParameters = [
+            "-Xplugin:" + configurations.scalaCompilerPlugin.asPath
+    ]
+}
+
+// configure the OSGi bundle
+jar {
+    bnd ''' 
+        -removeheaders: Bnd-LastModified,Bundle-Name,Created-By,Tool,Private-Package,Require-Capability
+        Import-Package: *
+        Export-Package: org.openmole.plugin.task.gama.*
+        Bundle-Activator : org.openmole.plugin.task.gama.Activator
+        Bundle-Version: 1.0.0
+        Bundle-SymbolicName: org.openmole.plugin.task.gama
+        Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+        Require-Capability: osgi.ee;filter:="(&(osgi.ee=JavaSE)(version=1.8))"
+        Bundle-Vendor: Gama team
+        Bundle-License: "http://www.apache.org/licenses/LICENSE-2.0"
+        '''
+}
+
+/*osgiBndManifest {
+    copyTo 'META-INF/MANIFEST.MF'
+}*/

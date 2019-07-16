@@ -1,0 +1,18 @@
+
+
+buildscript {
+
+    repositories {
+        maven { url "https://plugins.gradle.org/m2/"}
+       mavenCentral()
+        mavenLocal()
+    }
+
+    dependencies {
+        classpath "org.standardout:bnd-platform:1.7.0"
+        classpath "com.diffplug.gradle:goomph:3.16.0"
+        classpath "biz.aQute.bnd:biz.aQute.bnd.gradle:4.2.0"
+    }
+}
+
+// https://github.com/DamianReeves/scala-macros-usage-with-gradle
