@@ -12,4 +12,4 @@ cd openmole && sbt clean publishLocal
 
 cd ..
 
-gradle assemble
+./gradlew assemble

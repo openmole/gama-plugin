@@ -12,4 +12,4 @@ before_script:
 build:
   stage: build
   script:
-    - ./gradlew assemble
+    - ./build.sh
