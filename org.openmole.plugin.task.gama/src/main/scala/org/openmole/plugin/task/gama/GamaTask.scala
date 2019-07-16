@@ -101,7 +101,7 @@ object GamaTask {
     checkErrors(failOnError, errors.asScala)
 
     val allBundles = PluginManager.bundles
-    val bundles = properties.get(GamlProperties.PLUGINS).asScala.map {
+    val bundles = Option(properties.get(GamlProperties.PLUGINS)).map(_.asScala).getOrElse(Vector()).map {
       plugin =>
         allBundles.find(_.getSymbolicName == plugin).getOrElse(throw new UserBadDataError(s"Missing plugin for extensions $plugin"))
     }
