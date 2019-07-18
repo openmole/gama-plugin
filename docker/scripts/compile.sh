@@ -4,6 +4,7 @@ cd openmole
 git submodule init
 git submodule update
 git lfs fetch
+git checkout v9.1
 
 (cd build-system && sbt publishLocal)
 (cd libraries && sbt publishLocal)
@@ -13,7 +14,5 @@ git lfs fetch
 (cd openmole && ls -l openmole/bin/openmole/target/assemble/)
 
 cd ..
-
-ls -la
 
 ./gradlew assemble
