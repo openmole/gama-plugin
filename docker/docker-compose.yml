@@ -1,0 +1,15 @@
+version: '3.2'
+services:
+  openmole:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args :
+        UID: 1000
+        GID: 1000
+    image: openmole/openmole
+    ports:
+      - target: 8443
+        published: 8081
+    volumes:
+      - ${VOL_PATH}:/home/mole/workspace
